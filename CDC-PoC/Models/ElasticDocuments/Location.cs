@@ -2,7 +2,7 @@ using CDC_PoC.Constants;
 using Nest;
 using Newtonsoft.Json;
 
-namespace CDC_PoC.Models.DocumentsModels;
+namespace CDC_PoC.Models.ElasticDocuments;
 
 public class Location : IElasticDocument
 {
@@ -24,7 +24,7 @@ public class Location : IElasticDocument
 
     [JsonProperty(FieldsNames.TenantIdField)]
     [PropertyName(FieldsNames.TenantIdField)]
-    public string TenantId { get; set; } = "197226";
+    public string TenantId { get; set; }
 
     public string GetId()
     {

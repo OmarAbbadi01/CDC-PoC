@@ -1,5 +1,5 @@
 using CDC_PoC.Models;
-using CDC_PoC.Models.DocumentsModels;
+using CDC_PoC.Models.ElasticDocuments;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

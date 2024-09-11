@@ -19,7 +19,7 @@ public class ElasticCudService : IElasticCudService
         switch (payload.Operation.ToLower())
         {
             case "c":
-                await HandleCreation(payload);
+                await HandleCreate(payload);
                 break;
             case "u":
                 await HandleUpdate(payload);
@@ -30,7 +30,7 @@ public class ElasticCudService : IElasticCudService
         }
     }
 
-    private async Task HandleCreation(Payload payload)
+    private async Task HandleCreate(Payload payload)
     {
         var newDocument = payload.After;
 
@@ -41,7 +41,7 @@ public class ElasticCudService : IElasticCudService
 
         var indexResponse = await _elasticClient.IndexAsync<object>(newDocument, i => i
             .Index("index1")
-            .Routing("197226"));
+            .Routing(newDocument.TenantId));
 
         if (!indexResponse.IsValid)
         {
@@ -61,6 +61,7 @@ public class ElasticCudService : IElasticCudService
 
         var updateResponse = await _elasticClient.UpdateByQueryAsync<object>(u => u
             .Index("index1")
+            .Routing(oldDocument.TenantId)
             .Query(q => q
                 .Match(m => m
                     .Field(oldDocument.GetIdFieldName())
@@ -83,7 +84,7 @@ public class ElasticCudService : IElasticCudService
     private async Task HandleDelete(Payload payload)
     {
         var oldDocument = payload.Before;
-        
+
         if (oldDocument is null)
         {
             throw new Exception("Document is null");
@@ -91,6 +92,7 @@ public class ElasticCudService : IElasticCudService
 
         var indexResponse = await _elasticClient.DeleteByQueryAsync<object>(d => d
             .Index("index1")
+            .Routing(oldDocument.TenantId)
             .Query(q => q
                 .Match(m => m
                     .Field(oldDocument.GetIdFieldName())

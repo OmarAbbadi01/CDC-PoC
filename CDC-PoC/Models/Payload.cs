@@ -1,4 +1,4 @@
-using CDC_PoC.Models.DocumentsModels;
+using CDC_PoC.Models.ElasticDocuments;
 using Newtonsoft.Json;
 
 namespace CDC_PoC.Models;
