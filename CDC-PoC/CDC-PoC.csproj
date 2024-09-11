@@ -9,7 +9,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.15.6" />
+        <PackageReference Include="kafka-sharp" Version="1.4.3" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0"/>
+        <PackageReference Include="NEST" Version="7.17.5" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
     </ItemGroup>
 

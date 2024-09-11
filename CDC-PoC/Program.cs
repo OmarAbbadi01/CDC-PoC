@@ -1,19 +1,22 @@
+using CDC_PoC.Services;
+using Nest;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddLogging(x => x.AddConsole());
+
+builder.Services.AddSingleton<IElasticClient>(_ => new ElasticClient(
+    new ConnectionSettings(new Uri("http://localhost:9200")))
+);
+builder.Services.AddSingleton<IElasticCudService, ElasticCudService>();
+builder.Services.AddHostedService<KafkaConsumer>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseHttpsRedirection();
+
+app.MapGet("/home", () => "Welcome to CDC PoC")
+    .WithName("Home")
+    .WithOpenApi();
 
 app.Run();
