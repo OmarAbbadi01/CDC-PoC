@@ -1,6 +1,6 @@
-namespace CDC_PoC.Constants;
+namespace CDC_PoC.Utils;
 
-public static class FieldsNames
+public static class IdFieldsNames
 {
     public const string TenantIdField = "tenantId";
     

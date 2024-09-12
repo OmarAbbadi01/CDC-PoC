@@ -1,78 +1,74 @@
-using System.Text;
 using System.Text.Json;
+using CDC_PoC.Config;
 using CDC_PoC.Models;
-using Kafka.Public;
-using Kafka.Public.Loggers;
+using Confluent.Kafka;
+using Microsoft.Extensions.Options;
 
 namespace CDC_PoC.Services;
 
 public class KafkaConsumer : IHostedService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<KafkaConsumer> _logger;
-    private readonly ClusterClient _cluster;
-    // private IDocumentTenantIdInjector _documentTenantIdInjector = null!;
-    private IElasticCudService _elasticService = null!;
+    private readonly IOptions<AppConfig> _appConfig;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private IElasticCudService _elasticCudService = null!;
 
-    public KafkaConsumer(IServiceScopeFactory scopeFactory,
-        ILogger<KafkaConsumer> logger)
+    public KafkaConsumer(ILogger<KafkaConsumer> logger,
+        IOptions<AppConfig> appConfig,
+        IServiceScopeFactory scopeFactory)
     {
-        _scopeFactory = scopeFactory;
         _logger = logger;
-        _cluster = CreateClusterClient();
+        _appConfig = appConfig;
+        _scopeFactory = scopeFactory;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
+        var config = new ConsumerConfig
+        {
+            BootstrapServers = _appConfig.Value.KafkaConfiguration.BootstrapServers,
+            GroupId = _appConfig.Value.KafkaConfiguration.GroupId,
+            AutoOffsetReset = AutoOffsetReset.Earliest,
+            EnableAutoCommit = false,
+        };
+        using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
+
         using var scope = _scopeFactory.CreateScope();
+        _elasticCudService = scope.ServiceProvider.GetRequiredService<IElasticCudService>();
 
-        // _documentTenantIdInjector = scope.ServiceProvider.GetRequiredService<IDocumentTenantIdInjector>();
-        _elasticService = scope.ServiceProvider.GetRequiredService<IElasticCudService>();
-
-        Initialize();
-        return Task.CompletedTask;
+        consumer.Subscribe(_appConfig.Value.KafkaConfiguration.Topics);
+        
+        await ConsumeMessages(consumer, cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _cluster.Dispose();
         return Task.CompletedTask;
     }
 
-    private static ClusterClient CreateClusterClient()
+    private async Task ConsumeMessages(IConsumer<Ignore, string> consumer, CancellationToken cancellationToken)
     {
-        return new ClusterClient(new Configuration()
+        while (!cancellationToken.IsCancellationRequested)
         {
-            Seeds = "localhost:9092"
-        }, new ConsoleLogger());
-    }
+            try
+            {
+                var consumeResult = consumer.Consume(cancellationToken);
 
-    private void Initialize()
-    {
-        _cluster.MessageReceived += HandleMessage;
+                if (consumeResult.Message.Value is null) continue;
 
-        _cluster.ConsumeFromLatest("dev-sqlcust-601.devtung.dbo.dm_location");
-        _cluster.ConsumeFromLatest("dev-sqlcust-601.devtung.dbo.dm_employee");
-        _cluster.ConsumeFromLatest("dev-sqlcust-601.devtung.dbo.AccountBase");
-        _cluster.ConsumeFromLatest("dev-sqlcust-601.appledev.dbo.dm_location");
-        _cluster.ConsumeFromLatest("dev-sqlcust-601.appledev.dbo.dm_employee");
-    }
+                var response = JsonSerializer.Deserialize<KafkaResponseBody>(consumeResult.Message.Value);
+                _logger.LogInformation($"Consumed a message:\n {response}");
 
-    private void HandleMessage(RawKafkaRecord record)
-    {
-        if (record.Value is byte[] byteArray)
-        {
-            var message = Encoding.UTF8.GetString(byteArray);
-            var response = JsonSerializer.Deserialize<KafkaResponseBody>(message);
+                if (response?.Payload is null) continue;
+                
+                await _elasticCudService.HandleChanges(response.Payload);
 
-            if (response?.Payload is null) return;
-            
-            _logger.LogInformation($"Consumed a message:\n {response}");
-            _elasticService.HandleChanges(response.Payload).GetAwaiter().GetResult();
-        }
-        else
-        {
-            _logger.LogInformation("Received a message that is not a byte array");
+                consumer.Commit(consumeResult);
+            }
+            catch (ConsumeException e)
+            {
+                _logger.LogError($"Error consuming message: {e.Error.Reason}");
+            }
         }
     }
 }

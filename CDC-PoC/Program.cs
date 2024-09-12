@@ -10,11 +10,6 @@ builder.Services.Configure<AppConfig>(builder.Configuration);
 
 builder.Services.AddLogging(x => x.AddConsole());
 
-// builder.Services.AddScoped<IElasticClient>(serviceProvider =>
-// {
-//     var appConfig = serviceProvider.GetRequiredService<IOptions<AppConfig>>().Value;
-//     return new ElasticClient(new ConnectionSettings(new Uri(appConfig.ElasticsearchConfiguration.ElasticClientHost)));
-// });
 builder.Services.AddScoped<ElasticsearchClient>(serviceProvider =>
 {
     var appConfig = serviceProvider.GetRequiredService<IOptions<AppConfig>>().Value;

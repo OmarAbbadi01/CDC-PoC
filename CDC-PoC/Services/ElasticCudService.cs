@@ -47,13 +47,11 @@ public class ElasticCudService : IElasticCudService
         {
             TenantId = tenantId,
             Type = payload.Source.Table,
-            CreatedOn = DateTime.Now,
-            ModifiedOn = DateTime.Now,
             Value = payload.After.Value
         };
 
         var indexResponse = await _elasticClient.IndexAsync(elasticDoc, i => i
-                .Index("index2")
+                .Index("index1")
                 .Routing(elasticDoc.TenantId)
                 .Id(null) // To Use Elastic's ID Auto Generation
         );
@@ -75,30 +73,38 @@ public class ElasticCudService : IElasticCudService
         var idFieldName = GetIdFieldName(payload.Source.Table);
         var idFieldValue = payload.Before.Value.GetProperty(idFieldName).ToString();
 
-        var updateResponse = await _elasticClient.UpdateByQueryAsync(new UpdateByQueryRequest("index2")
+        // delete old document
+        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest("index1")
         {
             Routing = tenantId,
             Query = new MatchQuery($"value.{idFieldName}"!)
             {
                 Query = idFieldValue
-            },
-            Script = new Script
-            {
-                Source = @"
-                    ctx._source.value = params.newValue;
-                    ctx._source.modifiedOn = params.modifiedOn;
-                ",
-                Params = new Dictionary<string, object>
-                {
-                    { "newValue", payload.After.Value },
-                    { "modifiedOn", DateTime.Now }
-                }
             }
         });
 
-        if (!updateResponse.IsValidResponse)
+        if (!deleteResponse.IsValidResponse)
         {
-            _logger.LogWarning($"Error updating the document. {updateResponse.ElasticsearchServerError}");
+            _logger.LogError($"Error deleting the document. {deleteResponse.ElasticsearchServerError}");
+        }
+        
+        // Insert the new one
+        var elasticDoc = new ElasticsearchDocument()
+        {
+            TenantId = tenantId,
+            Type = payload.Source.Table,
+            Value = payload.After.Value
+        };
+
+        var indexResponse = await _elasticClient.IndexAsync(elasticDoc, i => i
+                .Index("index1")
+                .Routing(elasticDoc.TenantId)
+                .Id(null) // To Use Elastic's ID Auto Generation
+        );
+
+        if (!indexResponse.IsValidResponse)
+        {
+            _logger.LogError($"Error indexing the document. {indexResponse.ElasticsearchServerError}");
         }
     }
 
@@ -113,7 +119,7 @@ public class ElasticCudService : IElasticCudService
         var idFieldName = GetIdFieldName(payload.Source.Table);
         var idFieldValue = payload.Before.Value.GetProperty(idFieldName).ToString();
 
-        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest("index2")
+        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest("index1")
         {
             Routing = tenantId,
             Query = new MatchQuery($"value.{idFieldName}"!)
