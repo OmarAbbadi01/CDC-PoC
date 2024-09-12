@@ -5,5 +5,5 @@ public class CustomerSettingValueResponse
     /// <summary>
     /// Setting Value
     /// </summary>
-    public string Value { get; set; }
+    public string? Value { get; set; }
 }

@@ -1,17 +1,22 @@
 using CDC_PoC.Models;
-using Nest;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 
 namespace CDC_PoC.Services;
 
 public class ElasticCudService : IElasticCudService
 {
-    private readonly IElasticClient _elasticClient;
+    private readonly ElasticsearchClient _elasticClient;
+    private readonly ICustomerService _customerService;
     private readonly ILogger<ElasticCudService> _logger;
 
-    public ElasticCudService(IElasticClient elasticClient, ILogger<ElasticCudService> logger)
+    public ElasticCudService(ElasticsearchClient elasticClient,
+        ILogger<ElasticCudService> logger,
+        ICustomerService customerService)
     {
         _elasticClient = elasticClient;
         _logger = logger;
+        _customerService = customerService;
     }
 
     public async Task HandleChanges(Payload payload)
@@ -32,78 +37,112 @@ public class ElasticCudService : IElasticCudService
 
     private async Task HandleCreate(Payload payload)
     {
-        var newDocument = payload.After;
-
-        if (newDocument is null)
+        if (payload.After is null)
         {
             throw new Exception("Document is null.");
         }
 
-        var indexResponse = await _elasticClient.IndexAsync<object>(newDocument, i => i
-            .Index("index1")
-            .Routing(newDocument.TenantId));
-
-        if (!indexResponse.IsValid)
+        var tenantId = await GetCustomerId(payload);
+        var elasticDoc = new ElasticsearchDocument()
         {
-            _logger.LogError($"Error saving the new document. {indexResponse.ServerError}");
+            TenantId = tenantId,
+            Type = payload.Source.Table,
+            CreatedOn = DateTime.Now,
+            ModifiedOn = DateTime.Now,
+            Value = payload.After.Value
+        };
+
+        var indexResponse = await _elasticClient.IndexAsync(elasticDoc, i => i
+                .Index("index2")
+                .Routing(elasticDoc.TenantId)
+                .Id(null) // To Use Elastic's ID Auto Generation
+        );
+
+        if (!indexResponse.IsValidResponse)
+        {
+            _logger.LogError($"Error saving the new document. {indexResponse.ElasticsearchServerError}");
         }
     }
 
     private async Task HandleUpdate(Payload payload)
     {
-        var oldDocument = payload.Before;
-        var newDocument = payload.After;
-
-        if (oldDocument is null || newDocument is null)
+        if (payload.Before is null || payload.After is null)
         {
             throw new Exception("Document is null");
         }
 
-        var updateResponse = await _elasticClient.UpdateByQueryAsync<object>(u => u
-            .Index("index1")
-            .Routing(oldDocument.TenantId)
-            .Query(q => q
-                .Match(m => m
-                    .Field(oldDocument.GetIdFieldName())
-                    .Query(oldDocument.GetId())
-                )
-            )
-            .Script(s => s
-                .Source(@"ctx._source = params.newDocument;")
-                .Params(p => p
-                    .Add("newDocument", newDocument))
-            )
-        );
+        var tenantId = await GetCustomerId(payload);
+        var idFieldName = GetIdFieldName(payload.Source.Table);
+        var idFieldValue = payload.Before.Value.GetProperty(idFieldName).ToString();
 
-        if (!updateResponse.IsValid)
+        var updateResponse = await _elasticClient.UpdateByQueryAsync(new UpdateByQueryRequest("index2")
         {
-            _logger.LogWarning($"Error updating the document. {updateResponse.ServerError}");
+            Routing = tenantId,
+            Query = new MatchQuery($"value.{idFieldName}"!)
+            {
+                Query = idFieldValue
+            },
+            Script = new Script
+            {
+                Source = @"
+                    ctx._source.value = params.newValue;
+                    ctx._source.modifiedOn = params.modifiedOn;
+                ",
+                Params = new Dictionary<string, object>
+                {
+                    { "newValue", payload.After.Value },
+                    { "modifiedOn", DateTime.Now }
+                }
+            }
+        });
+
+        if (!updateResponse.IsValidResponse)
+        {
+            _logger.LogWarning($"Error updating the document. {updateResponse.ElasticsearchServerError}");
         }
     }
 
     private async Task HandleDelete(Payload payload)
     {
-        var oldDocument = payload.Before;
-
-        if (oldDocument is null)
+        if (payload.Before is null)
         {
             throw new Exception("Document is null");
         }
 
-        var indexResponse = await _elasticClient.DeleteByQueryAsync<object>(d => d
-            .Index("index1")
-            .Routing(oldDocument.TenantId)
-            .Query(q => q
-                .Match(m => m
-                    .Field(oldDocument.GetIdFieldName())
-                    .Query(oldDocument.GetId())
-                )
-            )
-        );
+        var tenantId = await GetCustomerId(payload);
+        var idFieldName = GetIdFieldName(payload.Source.Table);
+        var idFieldValue = payload.Before.Value.GetProperty(idFieldName).ToString();
 
-        if (!indexResponse.IsValid)
+        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest("index2")
         {
-            _logger.LogWarning($"Error saving the new document. {indexResponse.ServerError}");
+            Routing = tenantId,
+            Query = new MatchQuery($"value.{idFieldName}"!)
+            {
+                Query = idFieldValue
+            }
+        });
+
+        if (!deleteResponse.IsValidResponse)
+        {
+            _logger.LogWarning($"Error saving the new document. {deleteResponse.ElasticsearchServerError}");
         }
+    }
+
+    private async Task<int> GetCustomerId(Payload payload)
+    {
+        return await _customerService.GetCustomerIdByDbName(payload.Source.Db);
+    }
+
+
+    // TODO: move this out
+    private static string GetIdFieldName(string tableName)
+    {
+        return tableName switch
+        {
+            "dm_location" => "dm_locationId",
+            "dm_employee" => "dm_employeeId",
+            "AccountBase" => "AccountId",
+            _ => "Id"
+        };
     }
 }

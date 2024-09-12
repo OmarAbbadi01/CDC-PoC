@@ -1,15 +1,15 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace CDC_PoC.Models;
 
 public class Source
 {
-    [JsonProperty("db")]
+    [JsonPropertyName("db")]
     public required string Db { get; set; }
     
-    [JsonProperty("schema")]
+    [JsonPropertyName("schema")]
     public required string Schema { get; set; }
     
-    [JsonProperty("table")]
+    [JsonPropertyName("table")]
     public required string Table { get; set; }
 }
