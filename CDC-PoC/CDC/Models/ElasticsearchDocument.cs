@@ -1,4 +1,4 @@
-namespace CDC_PoC.Models;
+namespace CDC_PoC.CDC.Models;
 
 public class ElasticsearchDocument
 {

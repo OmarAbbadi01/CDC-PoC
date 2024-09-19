@@ -1,6 +1,6 @@
-using CDC_PoC.Models;
+using CDC_PoC.CDC.Models;
 
-namespace CDC_PoC.Services;
+namespace CDC_PoC.CDC.Services;
 
 public interface IElasticCudService
 {

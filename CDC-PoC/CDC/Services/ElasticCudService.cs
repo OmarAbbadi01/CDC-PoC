@@ -1,22 +1,26 @@
-using CDC_PoC.Models;
+using CDC_PoC.CDC.Models;
+using CDC_PoC.Config;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Microsoft.Extensions.Options;
 
-namespace CDC_PoC.Services;
+namespace CDC_PoC.CDC.Services;
 
 public class ElasticCudService : IElasticCudService
 {
     private readonly ElasticsearchClient _elasticClient;
     private readonly ICustomerService _customerService;
     private readonly ILogger<ElasticCudService> _logger;
+    private readonly IOptions<AppConfig> _appConfig;
 
     public ElasticCudService(ElasticsearchClient elasticClient,
         ILogger<ElasticCudService> logger,
-        ICustomerService customerService)
+        ICustomerService customerService, IOptions<AppConfig> appConfig)
     {
         _elasticClient = elasticClient;
         _logger = logger;
         _customerService = customerService;
+        _appConfig = appConfig;
     }
 
     public async Task HandleChanges(Payload payload)
@@ -51,7 +55,7 @@ public class ElasticCudService : IElasticCudService
         };
 
         var indexResponse = await _elasticClient.IndexAsync(elasticDoc, i => i
-                .Index("index1")
+                .Index(_appConfig.Value.ElasticsearchConfiguration.IndexName)
                 .Routing(elasticDoc.TenantId)
                 .Id(null) // To Use Elastic's ID Auto Generation
         );
@@ -74,7 +78,7 @@ public class ElasticCudService : IElasticCudService
         var idFieldValue = payload.Before.Value.GetProperty(idFieldName).ToString();
 
         // delete old document
-        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest("index1")
+        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest(_appConfig.Value.ElasticsearchConfiguration.IndexName)
         {
             Routing = tenantId,
             Query = new MatchQuery($"value.{idFieldName}"!)
@@ -97,7 +101,7 @@ public class ElasticCudService : IElasticCudService
         };
 
         var indexResponse = await _elasticClient.IndexAsync(elasticDoc, i => i
-                .Index("index1")
+                .Index(_appConfig.Value.ElasticsearchConfiguration.IndexName)
                 .Routing(elasticDoc.TenantId)
                 .Id(null) // To Use Elastic's ID Auto Generation
         );
@@ -119,7 +123,7 @@ public class ElasticCudService : IElasticCudService
         var idFieldName = GetIdFieldName(payload.Source.Table);
         var idFieldValue = payload.Before.Value.GetProperty(idFieldName).ToString();
 
-        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest("index1")
+        var deleteResponse = await _elasticClient.DeleteByQueryAsync(new DeleteByQueryRequest(_appConfig.Value.ElasticsearchConfiguration.IndexName)
         {
             Routing = tenantId,
             Query = new MatchQuery($"value.{idFieldName}"!)
@@ -138,8 +142,7 @@ public class ElasticCudService : IElasticCudService
     {
         return await _customerService.GetCustomerIdByDbName(payload.Source.Db);
     }
-
-
+    
     // TODO: move this out
     private static string GetIdFieldName(string tableName)
     {

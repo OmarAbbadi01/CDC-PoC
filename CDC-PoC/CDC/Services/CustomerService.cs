@@ -1,6 +1,6 @@
 using R365.CustomerSettings;
 
-namespace CDC_PoC.Services;
+namespace CDC_PoC.CDC.Services;
 
 public class CustomerService : ICustomerService
 {

@@ -1,4 +1,4 @@
-namespace CDC_PoC.Services;
+namespace CDC_PoC.CDC.Services;
 
 public interface ICustomerService
 {

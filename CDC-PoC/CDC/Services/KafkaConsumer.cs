@@ -1,12 +1,12 @@
 using System.Text.Json;
+using CDC_PoC.CDC.Models;
 using CDC_PoC.Config;
-using CDC_PoC.Models;
 using Confluent.Kafka;
 using Microsoft.Extensions.Options;
 
-namespace CDC_PoC.Services;
+namespace CDC_PoC.CDC.Services;
 
-public class KafkaConsumer : IHostedService
+public class KafkaConsumer : BackgroundService
 {
     private readonly ILogger<KafkaConsumer> _logger;
     private readonly IOptions<AppConfig> _appConfig;
@@ -22,8 +22,13 @@ public class KafkaConsumer : IHostedService
         _scopeFactory = scopeFactory;
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
+        await Task.Yield();
+
+        using var scope = _scopeFactory.CreateScope();
+        _elasticCudService = scope.ServiceProvider.GetRequiredService<IElasticCudService>();
+        
         var config = new ConsumerConfig
         {
             BootstrapServers = _appConfig.Value.KafkaConfiguration.BootstrapServers,
@@ -33,21 +38,14 @@ public class KafkaConsumer : IHostedService
         };
         using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
 
-        using var scope = _scopeFactory.CreateScope();
-        _elasticCudService = scope.ServiceProvider.GetRequiredService<IElasticCudService>();
-
         consumer.Subscribe(_appConfig.Value.KafkaConfiguration.Topics);
-        
-        await ConsumeMessages(consumer, cancellationToken);
-    }
 
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
+        await ConsumeMessages(consumer, cancellationToken);
     }
 
     private async Task ConsumeMessages(IConsumer<Ignore, string> consumer, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Started Consuming...");
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -60,7 +58,7 @@ public class KafkaConsumer : IHostedService
                 _logger.LogInformation($"Consumed a message:\n {response}");
 
                 if (response?.Payload is null) continue;
-                
+
                 await _elasticCudService.HandleChanges(response.Payload);
 
                 consumer.Commit(consumeResult);

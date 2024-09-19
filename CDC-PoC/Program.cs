@@ -1,10 +1,17 @@
+using CDC_PoC.CDC.Services;
 using CDC_PoC.Config;
-using CDC_PoC.Services;
+using CDC_PoC.Search;
 using Elastic.Clients.Elasticsearch;
 using Microsoft.Extensions.Options;
 using Refit;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+
+// Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<AppConfig>(builder.Configuration);
 
@@ -19,6 +26,7 @@ builder.Services.AddScoped<ElasticsearchClient>(serviceProvider =>
 
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IElasticCudService, ElasticCudService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddHostedService<KafkaConsumer>();
 
 var customerSettingsUrl = builder.Configuration["CustomerSettingConfiguration:ApiUrl"];
@@ -32,10 +40,13 @@ builder.Services.AddScoped<ICustomerSettingsClient>(_ => RestService.For<ICustom
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-app.MapGet("/home", () => "Welcome to CDC PoC")
-    .WithName("Home")
-    .WithOpenApi();
+app.MapControllers();
 
 app.Run();
