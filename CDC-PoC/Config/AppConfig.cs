@@ -30,9 +30,17 @@ public class KafkaConfiguration
 
 public class SearchableFields
 {
-    [JsonPropertyName("dm_location")]
     public required List<string> Location { get; set; }
     
-    [JsonPropertyName("dm_employee")]
     public required List<string> Employee { get; set; }
+
+    // TODO: Move this to DB and make it cachable
+    public string[] GetAllSearchableFields()
+    {
+        return Location
+            .Select(l => $"value.{l}")
+            .Concat(Employee
+                .Select(e => $"value.{e}"))
+            .ToArray();
+    }
 }
