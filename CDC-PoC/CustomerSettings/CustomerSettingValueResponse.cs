@@ -1,4 +1,4 @@
-namespace CDC_PoC.CDC.Models;
+namespace CDC_PoC.CustomerSettings;
 
 public class CustomerSettingValueResponse
 {

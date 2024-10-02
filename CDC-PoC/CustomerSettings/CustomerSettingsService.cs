@@ -1,12 +1,12 @@
 using R365.CustomerSettings;
 
-namespace CDC_PoC.CDC.Services;
+namespace CDC_PoC.CustomerSettings;
 
-public class CustomerService : ICustomerService
+public class CustomerSettingsService : ICustomerSettingsService
 {
     private readonly ICustomerSettingsClient _customerSettingsClient;
 
-    public CustomerService(ICustomerSettingsClient customerSettingsClient)
+    public CustomerSettingsService(ICustomerSettingsClient customerSettingsClient)
     {
         _customerSettingsClient = customerSettingsClient;
     }

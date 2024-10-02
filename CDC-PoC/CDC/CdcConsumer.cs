@@ -1,19 +1,19 @@
 using System.Text.Json;
-using CDC_PoC.CDC.Models;
 using CDC_PoC.Config;
+using CDC_PoC.Elastic;
 using Confluent.Kafka;
 using Microsoft.Extensions.Options;
 
-namespace CDC_PoC.CDC.Services;
+namespace CDC_PoC.CDC;
 
-public class KafkaConsumer : BackgroundService
+public class CdcConsumer : BackgroundService
 {
-    private readonly ILogger<KafkaConsumer> _logger;
+    private readonly ILogger<CdcConsumer> _logger;
     private readonly IOptions<AppConfig> _appConfig;
     private readonly IServiceScopeFactory _scopeFactory;
     private IElasticCudService _elasticCudService = null!;
 
-    public KafkaConsumer(ILogger<KafkaConsumer> logger,
+    public CdcConsumer(ILogger<CdcConsumer> logger,
         IOptions<AppConfig> appConfig,
         IServiceScopeFactory scopeFactory)
     {
@@ -54,7 +54,7 @@ public class KafkaConsumer : BackgroundService
 
                 if (consumeResult.Message.Value is null) continue;
 
-                var response = JsonSerializer.Deserialize<KafkaResponseBody>(consumeResult.Message.Value);
+                var response = JsonSerializer.Deserialize<CdcResponseBody>(consumeResult.Message.Value);
                 _logger.LogInformation($"Consumed a message:\n {response}");
 
                 if (response?.Payload is null) continue;

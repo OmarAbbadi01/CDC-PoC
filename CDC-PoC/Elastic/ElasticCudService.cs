@@ -1,25 +1,26 @@
-using CDC_PoC.CDC.Models;
+using CDC_PoC.CDC;
 using CDC_PoC.Config;
+using CDC_PoC.CustomerSettings;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 using Microsoft.Extensions.Options;
 
-namespace CDC_PoC.CDC.Services;
+namespace CDC_PoC.Elastic;
 
 public class ElasticCudService : IElasticCudService
 {
     private readonly ElasticsearchClient _elasticClient;
-    private readonly ICustomerService _customerService;
+    private readonly ICustomerSettingsService _customerSettingsService;
     private readonly ILogger<ElasticCudService> _logger;
     private readonly IOptions<AppConfig> _appConfig;
 
     public ElasticCudService(ElasticsearchClient elasticClient,
         ILogger<ElasticCudService> logger,
-        ICustomerService customerService, IOptions<AppConfig> appConfig)
+        ICustomerSettingsService customerSettingsService, IOptions<AppConfig> appConfig)
     {
         _elasticClient = elasticClient;
         _logger = logger;
-        _customerService = customerService;
+        _customerSettingsService = customerSettingsService;
         _appConfig = appConfig;
     }
 
@@ -140,7 +141,7 @@ public class ElasticCudService : IElasticCudService
 
     private async Task<int> GetCustomerId(Payload payload)
     {
-        return await _customerService.GetCustomerIdByDbName(payload.Source.Db);
+        return await _customerSettingsService.GetCustomerIdByDbName(payload.Source.Db);
     }
     
     // TODO: move this out

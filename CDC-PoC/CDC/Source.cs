@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CDC_PoC.CDC.Models;
+namespace CDC_PoC.CDC;
 
 public class Source
 {

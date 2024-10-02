@@ -13,7 +13,12 @@
         <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.15.6" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0-rc.1.24431.7" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0-rc.1.24431.7" />
         <PackageReference Include="R365.CustomerSettings" Version="5.1.4" />
+        <PackageReference Include="R365.FireAndForget" Version="2.0.3" />
+        <PackageReference Include="R365.Libraries.Security.Azure" Version="1.0.4" />
+        <PackageReference Include="R365.Messaging.Contracts" Version="2.0.1" />
+        <PackageReference Include="R365.Messaging" Version="7.0.0-beta.2" />
         <PackageReference Include="Refit" Version="7.1.2" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
     </ItemGroup>

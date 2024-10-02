@@ -1,7 +1,6 @@
-using CDC_PoC.CDC.Models;
 using Refit;
 
-namespace CDC_PoC.CDC.Services;
+namespace CDC_PoC.CustomerSettings;
 
 [Headers("Content-type: application/json")]
 public interface ICustomerSettingsClient
