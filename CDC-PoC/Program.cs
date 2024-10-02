@@ -1,3 +1,4 @@
+using AutoFixture;
 using CDC_PoC.Config;
 using CDC_PoC.CustomerSettings;
 using CDC_PoC.Elastic;
@@ -37,6 +38,8 @@ builder.Services.AddScoped<ICustomerSettingsService, CustomerSettingsService>();
 builder.Services.AddScoped<IElasticCudService, ElasticCudService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IMigrationService, MigrationService>();
+builder.Services.AddHostedService<MigrationWorker>();
+builder.Services.AddSingleton<IFixture, Fixture>();
 // builder.Services.AddHostedService<KafkaConsumer>();
 
 var customerSettingsUrl = builder.Configuration["CustomerSettingConfiguration:ApiUrl"];

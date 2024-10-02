@@ -2,6 +2,7 @@ using CDC_PoC.Config;
 using CDC_PoC.Elastic;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Bulk;
+using Microsoft.Extensions.Options;
 
 namespace CDC_PoC.Migration;
 
@@ -9,9 +10,9 @@ public class MigrationService : IMigrationService
 {
     private readonly ElasticsearchClient _elasticClient;
     private readonly ILogger<MigrationService> _logger;
-    private readonly AppConfig _appConfig;
+    private readonly IOptions<AppConfig> _appConfig;
 
-    public MigrationService(ElasticsearchClient elasticClient, ILogger<MigrationService> logger, AppConfig appConfig)
+    public MigrationService(ElasticsearchClient elasticClient, ILogger<MigrationService> logger, IOptions<AppConfig> appConfig)
     {
         _elasticClient = elasticClient;
         _logger = logger;
@@ -25,11 +26,12 @@ public class MigrationService : IMigrationService
         var operations = documents.Select(doc => new BulkIndexOperation<ElasticsearchDocument>(doc)
         {
             Routing = tenantId,
-            Index = _appConfig.ElasticsearchConfiguration.IndexName
+            Index = _appConfig.Value.ElasticsearchConfiguration.IndexName
         });
         var bulkRequest = new BulkRequest()
         {
-            Operations = new BulkOperationsCollection(operations)
+            Operations = new BulkOperationsCollection(operations),
+            Refresh = Refresh.True
         };
         
         var response = await _elasticClient.BulkAsync(bulkRequest);
