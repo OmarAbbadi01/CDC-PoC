@@ -1,11 +1,13 @@
 using CDC_PoC.Config;
 using CDC_PoC.CustomerSettings;
 using CDC_PoC.Elastic;
+using CDC_PoC.Migration;
 using CDC_PoC.Search;
 using Elastic.Clients.Elasticsearch;
 using Microsoft.Extensions.Options;
 using R365.Context;
 using R365.Context.Extensions;
+using R365.FireAndForget;
 using R365.Libraries.Security.Azure;
 using R365.Messaging;
 using R365.Messaging.Extensions;
@@ -34,6 +36,7 @@ builder.Services.AddScoped<ElasticsearchClient>(serviceProvider =>
 builder.Services.AddScoped<ICustomerSettingsService, CustomerSettingsService>();
 builder.Services.AddScoped<IElasticCudService, ElasticCudService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<IMigrationService, MigrationService>();
 // builder.Services.AddHostedService<KafkaConsumer>();
 
 var customerSettingsUrl = builder.Configuration["CustomerSettingConfiguration:ApiUrl"];
@@ -68,6 +71,12 @@ builder.Services.AddR365Context();
 
 // Add logging
 builder.Services.AddLogging(configure => configure.AddConsole());
+
+builder.Services.AddOptions<FireAndForgetOptions>()
+    .Bind(builder.Configuration.GetSection("FireAndForget"))
+    .ValidateDataAnnotations();
+
+builder.Services.AddFireAndForget();
 
 
 var app = builder.Build();

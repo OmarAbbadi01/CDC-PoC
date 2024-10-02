@@ -6,7 +6,6 @@ namespace CDC_PoC.Search;
 [Route("search")]
 public class SearchController : ControllerBase
 {
-
     private readonly ISearchService _searchService;
 
     public SearchController(ISearchService searchService)

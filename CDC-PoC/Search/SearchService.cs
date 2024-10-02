@@ -43,7 +43,7 @@ public class SearchService : ISearchService
                 .Query(q => q
                     .MultiMatch(mm => mm
                         .Query(searchTerm)
-                        .Fields(_appConfig.Value.SearchableFields.GetAllSearchableFields())
+                        .Fields(_appConfig.Value.SearchableFields.GetAllSearchableFields()) // TODO: check * for all fields
                         .Fuzziness(new Fuzziness("AUTO"))
                         .Operator(Operator.And)
                     )

@@ -20,6 +20,7 @@
         <PackageReference Include="R365.Messaging.Contracts" Version="2.0.1" />
         <PackageReference Include="R365.Messaging" Version="7.0.0-beta.2" />
         <PackageReference Include="Refit" Version="7.1.2" />
+        <PackageReference Include="Riok.Mapperly" Version="3.6.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
     </ItemGroup>
 
