@@ -1,9 +1,8 @@
 using AutoFixture;
 using CDC_PoC.Config;
+using CDC_PoC.CustomerData;
 using CDC_PoC.CustomerSettings;
 using CDC_PoC.Elastic;
-using CDC_PoC.Migration;
-using CDC_PoC.Search;
 using Elastic.Clients.Elasticsearch;
 using Microsoft.Extensions.Options;
 using R365.Context;
@@ -36,10 +35,9 @@ builder.Services.AddScoped<ElasticsearchClient>(serviceProvider =>
 
 builder.Services.AddScoped<ICustomerSettingsService, CustomerSettingsService>();
 builder.Services.AddScoped<IElasticCudService, ElasticCudService>();
-builder.Services.AddScoped<ISearchService, SearchService>();
-builder.Services.AddScoped<IMigrationService, MigrationService>();
-builder.Services.AddHostedService<MigrationWorker>();
-builder.Services.AddSingleton<IFixture, Fixture>();
+builder.Services.AddScoped<ICustomerDataService, CustomerDataService>();
+// builder.Services.AddHostedService<MigrationWorker>();
+// builder.Services.AddSingleton<IFixture, Fixture>();
 // builder.Services.AddHostedService<KafkaConsumer>();
 
 var customerSettingsUrl = builder.Configuration["CustomerSettingConfiguration:ApiUrl"];

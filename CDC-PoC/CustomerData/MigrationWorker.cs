@@ -1,14 +1,14 @@
 using System.Text.Json;
 using AutoFixture;
 
-namespace CDC_PoC.Migration;
+namespace CDC_PoC.CustomerData;
 
 public class MigrationWorker : BackgroundService
 {
     private readonly ILogger<MigrationWorker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IFixture _fixture;
-    private IMigrationService _migrationService = null!;
+    private ICustomerDataService _customerDataService = null!;
 
     public MigrationWorker(ILogger<MigrationWorker> logger, IServiceScopeFactory scopeFactory, IFixture fixture)
     {
@@ -22,7 +22,7 @@ public class MigrationWorker : BackgroundService
         await Task.Yield();
 
         using var scope = _scopeFactory.CreateScope();
-        _migrationService = scope.ServiceProvider.GetRequiredService<IMigrationService>();
+        _customerDataService = scope.ServiceProvider.GetRequiredService<ICustomerDataService>();
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -31,7 +31,7 @@ public class MigrationWorker : BackgroundService
             var dto = CreateMigrationDto(accounts);
             var tenantId = 17;
             
-            await _migrationService.MigrateDataAsync(tenantId, dto);
+            await _customerDataService.MigrateDataAsync(tenantId, dto);
         }
     }
 

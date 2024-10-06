@@ -1,4 +1,4 @@
-namespace CDC_PoC.Migration;
+namespace CDC_PoC.CustomerData;
 
 public class AccountBase
 {

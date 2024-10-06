@@ -1,7 +1,7 @@
 using CDC_PoC.Elastic;
 using Riok.Mapperly.Abstractions;
 
-namespace CDC_PoC.Migration;
+namespace CDC_PoC.CustomerData;
 
 [Mapper]
 public static partial class MigrationDtoMapper

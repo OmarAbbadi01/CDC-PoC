@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CDC_PoC.Migration;
+namespace CDC_PoC.CustomerData;
 
 public class MigrationDto
 {
